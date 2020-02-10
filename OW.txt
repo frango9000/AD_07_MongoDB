@@ -1,0 +1,34 @@
+Creación de una base de datos
+use openWebinars
+Eliminar BBDD
+use openWebinars
+db.dropDatabase()
+Creamos una base de datos para realizar pruebas con ella creando colecciones y documentos, eliminándolas, modificándolas y leyendo su información.
+
+use openWebinars
+db.coleccion1.insert({nombre:”Pablo Campos”, edad:26, twitter:”@PabGallagher”, username:”pablo”})
+db.coleccion1.insert([{nombre:”Paco”, edad:23},{nombre:”Luisa”, edad:33},{nombre:”Gloria, edad:86”}])
+db.coleccion2.insert({Título:”Cien años de soledad”, autor:”Gabriel García Márquez”})
+db.coleccion1.find()
+db.coleccion1.find({edad:23})
+db.coleccion1.find({edad:{$gt:26}})
+db.coleccion1.find({edad:{$gte:26}})
+db.coleccion1.remove({nombre:”Gloria”})
+db.coleccion1.remove({nombre:{$regex:”Pa”}})
+db.coleccion1.find()
+db.coleccion1.update({nombre:”Luisa”},{$set:{edad:34}})
+db.coleccion1.update({nombre:"Luisa"},{$inc:{edad:1}})
+db.createCollection("log", {capped:true, size:1024, max:3})
+show collections
+db.log.insert({peticion:404})
+db.log.insert({peticion:200})
+db.log.find()
+db.log.insert({peticion:200})
+db.log.find()
+db.log.insert({peticion:500})
+db.log.find()
+db.createCollection("contactos",{validator:{$or:[{phone:{$type:"string"}},{email:{$regex:/@secmotic\.com$/}},{status:{$in:["Trabajando","Paro"]}}]},validationLevel: "strict"})
+db.contactos.insert({name:"Pablo",phone:345343434, status:"NOT IN"})
+
+
+
