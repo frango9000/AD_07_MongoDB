@@ -32,3 +32,45 @@ db.contactos.insert({name:"Pablo",phone:345343434, status:"NOT IN"})
 
 
 
+Usuarios Y Roles
+
+Para correr un contenedor que requiera de autenticación de usuarios ejecutamos el siguiente comando:
+
+
+docker run --name openWebinars -d mongo:latest mongod --auth --smallfiles
+Creamos user admin
+
+db.createUser({user:"admin",pwd:"admin01.",roles:[{role:"userAdminAnyDatabase",db:"admin"}]})
+Intentamos ver un listado de users
+db.getUsers()
+Nos “logueamos” como admin
+db.auth("admin","admin01.")
+Repetimos el intento
+db.getUsers()
+Vemos los usuarios
+db.getUsers()
+Creamos una BBDD
+show dbs
+use openWebinars
+db.createUser({user:"test", pwd:"test01.", roles: ["readWrite", "dbAdmin"]})
+db.auth("test","test01.")
+db.collection1.insert({hola:"adios"})
+show dbs
+Creamos dos usuarios
+mongo admin -u "admin" -p "admin01."     ---         db.auth("admin","admin01.")
+use openWebinars
+db.createUser({user:"test2", pwd:"test02.", roles: ["read"]})
+exit
+Comprobamos permisos
+mongo openWebinars -u "test2" -p "test02."
+show collections
+db.collection1.find()
+db.collection1.insert({documento1:"SI!"})
+db.runCommand({connectionStatus:1})
+{
+	"authInfo" : {
+		"authenticatedUsers" : [ ],
+		"authenticatedUserRoles" : [ ]
+	},
+	"ok" : 1
+}
