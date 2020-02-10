@@ -36,51 +36,6 @@ db.persoas.find({edade:{$nin:[35,40]}})
 $gt
 db.persoas.find({edade:{$gt:30}})
 
->>OPERADORES
-
-$eq --> equal
-db.persoas.find({"enderezo.rua":{$eq:"faisan"}})
-
-$ne --> no son iguales, nonequal, lista lso que no cumplan la condicion o que no exista ese campo
-db.persoas.find({"edade":{$ne:21}})
-
-$in --> Lista los documentos cuyo nombre se encuentre en ese conjunto
-db.persoas.find({"nome":{$in:["ana","luis"]}})
-
-$nin --> Lista los documentos cuyo nombre no se encuentre en ese conjunto
-db.persoas.find({"nome":{$nin:["ana","luis"]}})
-
-$gt --> greater than, y no salen losnull, solo los que tienen campo edade
-db.persoas.find({"edade":{$gt:30}})
-
-$lt --> less than, salen los que son menores y no los que no tienen campo edad.
-db.persoas.find({"edade":{$lt:40}})
-
-$gte -->greater than equal, mayor o igual, y no salen losnull, solo los que tienen campo edade
-db.persoas.find({"edade":{$gte:21}})
-
-$lte --> less than equal, salen los que son menores y no los que no tienen campo edad.
-db.persoas.find({"edade":{$lte:40}})
-
-$or --> Se cumple una u otra condición
-db.persoas.find({$or:[{"edade":{$gt:21}},{"nome":{$eq:"ana"}}]})
-
-$and --> Se cumplen las dos condiciones a la vez
-db.persoas.find({$and:[{"edade":{$gt:21}},{"nome":{$eq:"ana"}}]})
-
-$not --> 
-db.persoas.find({"edade":{$not:{$gt:30}}})
-
-$nor --> Lista los que no cumplen alguna de estas condiciones
-
-
-$exists --> 
-db.persoas.find({$nor:[{"edade":30},{"nome":"ana"}]})
-db.persoas.find({$nor:[{"edade":30},{"edade":{$exists:false}},{"nome":"ana"},{"nome":{exists:false}}]})
-
-
---> Poniendo exists quitamos los null que no tienen campo edad, 1=true,0=false
-db.persoas.find({"edade":{$exists:true,$nin:[30,40]}})
 
 Ref: https://docs.mongodb.com/manual/reference/operator/query/
 Comparison
@@ -163,6 +118,6 @@ db.persoas.find({edade:{$gt:30}}, {nome:0, edade:1})
 db.persoas.find({edade:{$gt:30}}, {_id:0,nome:1, edade:1})
 
 
-db.persoas.find({$or:[{nome:'ana'}, {edade:{$gt:31}}]}, {nome:0})
+db.persoas.find({$or:[{nome:'ana'}, {edade:$gt:31}]}, {nome:0})
 
 
