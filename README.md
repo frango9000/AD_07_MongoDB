@@ -82,7 +82,33 @@ db.persoas.find({$nor:[{"edade":30},{"edade":{$exists:false}},{"nome":"ana"},{"n
 --> Poniendo exists quitamos los null que no tienen campo edad, 1=true,0=false
 db.persoas.find({"edade":{$exists:true,$nin:[30,40]}})
 
-Ref: https://docs.mongodb.com/manual/reference/operator/query/
+Ref: https://docs.mongodb.com/manual/reference/operator/query/show databases
+use training
+db.scores.find()
+
+db.scores.find({score:{$lt:20}})
+
+it + enter -> baja los resultados de una consulta por el terminal de forma homogenea
+
+db.scores.find({$or:[{kind:'exam'},{kind:'quiz'}]})
+
+db.scores.insert({_id:1,kind:'taller',score:15,student:5})
+db.scores.insert({_id:2,kind:'taller',score:25,student:4})
+
+db.scores.find({$and:[{kind:'taller'},{student:{$lt:5}}]})
+
+db.scores.find().limit(10).sort({student:-1})
+
+db.stuff.insert({_id:123,hello:'world'})
+db.stuff.find()
+db.stuff.remove({}) -> vacia la collection entera
+
+db.stuff.update({_id:123},{$set:{hello:'si'}})
+
+db.stuff.insert({_id:124,by:'no'})
+
+db.stuff.update({_id:123},{helo:'xa'})
+db.stuff.update({_id:123},{$set:{hello:'si'}})
 Comparison
 Name	Description
 $eq	Matches values that are equal to a specified value.
@@ -164,5 +190,78 @@ db.persoas.find({edade:{$gt:30}}, {_id:0,nome:1, edade:1})
 
 
 db.persoas.find({$or:[{nome:'ana'}, {edade:{$gt:31}}]}, {nome:0})
+
+
+
+
+
+show databases
+use training
+db.scores.find()
+
+db.scores.find({score:{$lt:20}})
+
+it + enter -> baja los resultados de una consulta por el terminal de forma homogenea
+
+db.scores.find({$or:[{kind:'exam'},{kind:'quiz'}]})
+
+db.scores.insert({_id:1,kind:'taller',score:15,student:5})
+db.scores.insert({_id:2,kind:'taller',score:25,student:4})
+
+db.scores.find({$and:[{kind:'taller'},{student:{$lt:5}}]})
+
+db.scores.find().limit(10).sort({student:-1})
+
+db.stuff.insert({_id:123,hello:'world'})
+db.stuff.find()
+db.stuff.remove({}) -> vacia la collection entera
+
+db.stuff.update({_id:123},{$set:{hello:'si'}})
+
+db.stuff.insert({_id:124,by:'no'})
+
+db.stuff.update({_id:123},{helo:'xa'}, {upsert:true})
+db.stuff.update({_id:123},{$set:{hello:'si'}})
+
+db.stuff.update({_id:125},{helo:'xa'}, {upsert:true})
+
+db.stuff.update({helo:'xa'), {$set:{telf:11111}})
+
+db.stuff.update({helo:'xa'}, {$set:{telf:222222}}, {multi:true})
+
+
+
+
+db.books.update({_id:1},
+		{
+		 $inc: {stock:3},
+		 $set: {
+			item:'abc',
+			'info.publisher':'2222',
+			tags:['software'],
+			'ratings.1':{by:'xyz',rating:3}
+		       }
+		}
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
