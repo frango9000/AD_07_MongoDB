@@ -1,0 +1,36 @@
+// abrir terminal mongo
+mongo
+
+//unha vez lanzado o cliente  mongo podo copiar e pegar o que se atopa a partir de aqui:
+
+// creo base tenda
+use tenda
+// borrar coleccion pedidos 
+db.pedidos.drop()
+// creo colecion pedidos
+var pedidos=
+[
+{
+_id:"p1",
+codcli:"c1",
+codpro :"p1",
+cantidade :2,
+data:"02/02/2011"
+},
+{
+_id:"p2",
+codcli:"c2",
+codpro :"p2",
+cantidade :3,
+data:"03/03/2011"
+},
+{
+_id:"p3",
+codcli:"c1",
+codpro :"p2",
+cantidade :4,
+data:"04/04/2011"
+}
+]
+db.pedidos.insert(pedidos)
+
