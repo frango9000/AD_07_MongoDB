@@ -31,8 +31,9 @@ public class Main1 {
         ej4();
         ej5();
         ej6();
-
-
+        ej7();
+        ej8();
+        ej9();
     }
 
 
@@ -68,9 +69,30 @@ public class Main1 {
         while (iterator.hasNext()) {
             queryFields((Document) iterator.next(), "codcli", "codpro");
         }
-
-
     }
+
+    private static void ej7() {
+        System.out.println("#Ej7");
+        Iterator iterator = findByCantidadeGTnLT(2, 5).iterator();
+        while (iterator.hasNext()) {
+            queryFields((Document) iterator.next(), "codcli", "codpro");
+        }
+    }
+
+    private static void ej8() {
+        System.out.println("#Ej8");
+        Iterator it = pedidos.find().iterator();
+        while (it.hasNext()) {
+            queryFields((Document) it.next(), "codcli", "codpro");
+        }
+    }
+
+    private static void ej9() {
+        System.out.println("#Ej9");
+        duplicateCantidade("p4");
+        queryOne("p4");
+    }
+
 
     private static void init() {
         mongo    = new MongoClient("10.0.9.119", 27017);
@@ -140,5 +162,16 @@ public class Main1 {
 
     static FindIterable<Document> findByCantidadeGT(int cantidade) {
         return pedidos.find(Filters.gt("cantidade", cantidade));
+    }
+
+    static FindIterable<Document> findByCantidadeGTnLT(int gt, int lt) {
+        return pedidos.find(Filters.and(Filters.gt("cantidade", gt), Filters.lt("cantidade", lt)));
+    }
+
+    static void duplicateCantidade(String id) {
+        Document query = pedidos.find(Filters.eq("_id", id)).first();
+        int cantActual = query.getInteger("cantidade");
+        int doble = cantActual * 2;
+        pedidos.updateOne(Filters.eq("_id", id), Updates.set("cantidade", doble));
     }
 }
