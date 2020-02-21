@@ -6,6 +6,8 @@ import com.mongodb.MongoCommandException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -18,15 +20,63 @@ public class Main1 {
     static MongoCollection<Document> pedidos;
 
     public static void main(String[] args) {
-        mongo    = new MongoClient("10.0.9.27", 27017);
-        database = mongo.getDatabase("tenda");
-        pedidos  = database.getCollection("pedidos");
+        init();
+        showAllContent();
+        ej1();
+        showAllContent();
+        ej2();
+        queryOne("p3");
+        ej3();
+        queryOne("p2");
+        ej4();
+        ej5();
+        ej6();
 
-        showContent(pedidos);
+
+    }
+
+
+    private static void ej1() {
+        System.out.println("#Ej1");
+        pedidos.insertOne(createDocument("p4", "c1", "pro3", 5, "02/02/2019"));
+    }
+
+    private static void ej2() {
+        System.out.println("#Ej2");
+        pedidos.updateOne(Filters.eq("_id", "p3"), Updates.set("codpro", "pro4"));
+    }
+
+    private static void ej3() {
+        System.out.println("#Ej3");
+        incrementCantidadBy("p2", 7);
+    }
+
+    private static void ej4() {
+        System.out.println("#Ej4");
+        queryOne("p3");
+    }
+
+    private static void ej5() {
+        System.out.println("#Ej5");
+        Document query = queryOne("p1");
+        queryFields(query, "codcli", "codpro", "cantidade");
+    }
+
+    private static void ej6() {
+        System.out.println("#Ej6");
+        Iterator iterator = findByCantidadeGT(2).iterator();
+        while (iterator.hasNext()) {
+            queryFields((Document) iterator.next(), "codcli", "codpro");
+        }
+
+
     }
 
     private static void init() {
-
+        mongo    = new MongoClient("10.0.9.119", 27017);
+        database = mongo.getDatabase("tenda");
+        pedidos  = database.getCollection("pedidos");
+        pedidos.drop();
         try {
             database.createCollection("pedidos");
         } catch (MongoCommandException mce) {
@@ -38,10 +88,9 @@ public class Main1 {
         } catch (MongoBulkWriteException mbwe) {
             mbwe.printStackTrace();
         }
-        showContent(pedidos);
     }
 
-    private static void showContent(MongoCollection<Document> pedidos) {
+    private static void showAllContent() {
         // Getting the iterable object
         FindIterable<Document> iterDoc = pedidos.find();
         int i = 1;
@@ -71,5 +120,25 @@ public class Main1 {
             .append("codpro", codpro)
             .append("cantidade", cantidade)
             .append("data", data);
+    }
+
+    static Document queryOne(String id) {
+        Document document = pedidos.find(Filters.eq("_id", id)).first();
+        System.out.println(document);
+        return document;
+    }
+
+    static void incrementCantidadBy(String id, int incremento) {
+        pedidos.updateOne(Filters.eq("_id", "p2"), Updates.inc("cantidade", incremento));
+    }
+
+    static void queryFields(Document query, String... fields) {
+        for (String field : fields) {
+            System.out.println(field + ": " + query.get(field));
+        }
+    }
+
+    static FindIterable<Document> findByCantidadeGT(int cantidade) {
+        return pedidos.find(Filters.gt("cantidade", cantidade));
     }
 }
