@@ -74,3 +74,1281 @@ db.runCommand({connectionStatus:1})
 	},
 	"ok" : 1
 }
+
+Tipos de datos
+Levantamos contenedor y entramos a mongo
+
+
+var date = new Date()
+date
+var array = ["el1", 2, true, null]
+array
+1 a 1
+Cuando la relación entres dos entidades sea uno a uno, como por ejemplo entre un libro y su autor, normalmente la opción a la hora de diseñar la colección será embeber documentos, de tal forma que toda la información quede recogida en el mismo objeto.
+
+Esto aplicará cuando ambos recursos (autor y libro) no sean requeridos de manera recurrente por otras colecciones, como por ejemplo si un autor hubiera escrito 1 millón de libros. Sería más eficiente en cuanto a espacio en disco escribir el autor una única vez y referenciarlo desde los libros (si el espacio no fuera algo finito, sería más eficiente para la aplicación embeber el documento siempre).
+
+Es importante llegar a una solución de compromiso para según qué caso estemos resolviendo y que requerimientos tengamos para nuestra aplicación, que será lo que marque el diseño de la BBDD.
+
+
+use oneToOne
+db.articulos.insert({titulo:"Cien años de soledad", pages:550, autor:{name:"Gabriel García Márquez", location:"Colombia"}})
+db.articulos.find().pretty()
+1 a n
+Cuando la relación entre dos entidades es 1 a n, normalmente se aplicará la misma norma que para los documento 1 a 1 vista con anterioridad, es decir, se embeberan los documentos salvo que el acceso a ellos sea recurrente desde otras areas de la aplicación.
+
+Imaginemos un blog en el que tenemos artículos y tenemos comentarios dentro de cada artículo, normalmente los comentarios aparecen de manera exclusiva en ese artículo, luego en este caso, lo ideal será embeber los comentarios en el artículo.
+
+
+> use oneToN
+switched to db oneToN
+> db.articulos.insert({Title:"Aprendiendo mongo con Pablo Campos", Content:"OpenWebinars mola :) !", comentarios: [{usuario:"pcampos",contenido:"Mola tu curso!"},{usuario:"Paquito", contenido:"La verdad es que me entero de todo"}]})
+WriteResult({ "nInserted" : 1 })
+> db.articulos.find().pretty()
+{
+	"_id" : ObjectId("58a20397c89278b620355926"),
+	"Title" : "Aprendiendo mongo con Pablo Campos",
+	"Content" : "OpenWebinars mola :) !",
+	"comentarios" : [
+		{
+			"usuario" : "pcampos",
+			"contenido" : "Mola tu curso!"},{
+			"usuario" : "Paquito",
+			"contenido" : "La verdad es que me entero de todo"}]}
+Sin embargo, si cada comentario incluyera información del usuario que lo hace (avatar, nombre, puesto de trabajo y edad) y la repetición de comentarios por parte de los mismos usuarios en muchos artículos fuera algo generalizado, sería más eficiente referenciar en cada comentario al autor del mismo para evitar redundar información.
+
+
+> use oneToNReference
+switched to db oneToNReference
+> db.comentarios.insert([{username:"pablo",contenido:"De lujo"},{username:"paco",contenido:"Muy bien"},{username:"ignacio",contenido:"Regular"}])
+> db.comentarios.find().pretty()
+{	"_id" : ObjectId("58a204c9c89278b620355927"),
+	"username" : "pablo",
+	"contenido" : "De lujo"}{
+	"_id" : ObjectId("58a204c9c89278b620355928"),
+	"username" : "paco",
+	"contenido" : "Muy bien"}{
+	"_id" : ObjectId("58a204c9c89278b620355929"),
+	"username" : "ignacio",
+	"contenido" : "Regular"}
+>db.articulos.insert({Titulo:"Ejemplo referenciando", comentarios:[ObjectId("58a204c9c89278b620355927"),ObjectId("58a204c9c89278b620355928"),ObjectId("58a204c9c89278b620355929")]})
+WriteResult({ "nInserted" : 1 })
+> db.articulos.find().pretty()
+{
+	"_id" : ObjectId("58a20509c89278b62035592a"),
+	"Titulo" : "Ejemplo referenciando",
+	"comentarios" : [
+		ObjectId("58a204c9c89278b620355927"),
+		ObjectId("58a204c9c89278b620355928"),
+		ObjectId("58a204c9c89278b620355929")]}
+N a n
+Cuando la relación entre las entidades es de muchos a muchos, se aplica la misma lógica que en los casos anteriores, la referenciación o no de documentos dependerá de la repetición que se de de los mismos y de la operatividad de la aplicación.
+
+Imaginemos que tenemos un blog donde muchos autores distintos escriben (incluso de manera conjunta) muchos artículos cada uno. Para este caso la información relativa a los autores se repetirá con asiduidad y será más conveniente referenciar la misma.
+
+
+> use NToN
+switched to db NToN
+> db.autores.insert([{username:"JaviSant", edad:21},{username:"pcampos",edad:27}])
+
+> db.autores.find().pretty()
+{
+	"_id" : ObjectId("58a20673c89278b62035592b"),
+	"username" : "JaviSant",
+	"edad" : 21
+}
+{
+	"_id" : ObjectId("58a20673c89278b62035592c"),
+	"username" : "pcampos",
+	"edad" : 27
+}
+> db.articulos.insert({Titulo:"La casa por la venta", autores:[ObjectId("58a20673c89278b62035592b"), ObjectId("58a20673c89278b62035592c")]})
+WriteResult({ "nInserted" : 1 })
+> db.articulos.insert({Titulo:"La casa por la ventaNA II", autores:[ObjectId("58a20673c89278b62035592b"), ObjectId("58a20673c89278b62035592c")]})
+WriteResult({ "nInserted" : 1 })
+> db.articulos.insert({Titulo:"La casa por la ventaNA III - El retorno", autores:[ObjectId("58a20673c89278b62035592b"), ObjectId("58a20673c89278b62035592c")]})
+WriteResult({ "nInserted" : 1 })
+Además, para el perfil de cada autor podríamos querer ver cuántos y cuáles artículos ha escrito…
+> db.articulos.find()
+{ "_id" : ObjectId("58a206a1c89278b62035592d"), "Titulo" : "La casa por la venta", "autores" : [ ObjectId("58a20673c89278b62035592b"), ObjectId("58a20673c89278b62035592c") ] }
+{ "_id" : ObjectId("58a206a7c89278b62035592e"), "Titulo" : "La casa por la ventaNA II", "autores" : [ ObjectId("58a20673c89278b62035592b"), ObjectId("58a20673c89278b62035592c") ] }
+{ "_id" : ObjectId("58a206afc89278b62035592f"), "Titulo" : "La casa por la ventaNA III - El retorno", "autores" : [ ObjectId("58a20673c89278b62035592b"), ObjectId("58a20673c89278b62035592c") ] }
+> db.autores.update({username:"JaviSant"},{$set:{articulos:[ObjectId("58a206a1c89278b62035592d"),ObjectId("58a206a7c89278b62035592e"),ObjectId("58a206afc89278b62035592f")]}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+> db.autores.find().pretty()
+{
+	"_id" : ObjectId("58a20673c89278b62035592b"),
+	"username" : "JaviSant",
+	"edad" : 21,
+	"articulos" : [
+		ObjectId("58a206a1c89278b62035592d"),
+		ObjectId("58a206a7c89278b62035592e"),
+		ObjectId("58a206afc89278b62035592f")
+	]
+}
+{
+	"_id" : ObjectId("58a20673c89278b62035592c"),
+	"username" : "pcampos",
+	"edad" : 27
+}
+
+
+
+Pre-localización
+Cuando sabemos que un documento o colección va a albergar un tipo de datos que va a crecer en gran medida y además controlamos cómo crecerá podemos diseñar la BBDD para que sea lo más eficiente posible, este caso se da por ejemplo en las series temporales.
+
+Imaginemos que guardamos la temperatura en tiempo real segundo a segundo de una planta de sensores, la primera intención suele ser guardar un documento para cada medida de cada sensor:
+
+
+{	timestamp:ISODate("2016-10-10T23:06:37.000Z"),
+	Valor:24.56
+},{	timestamp:ISODate("2016-10-10T23:06:38.000Z"),
+	Valor:23.98
+}
+Sin embargo, esto no es nada eficiente, podríamos almacenar todas las medidas que se realizar durante un minuto:
+
+
+{
+	timestamp:ISODate("2016-10-10T23:06:38.000Z"),
+	Valores:{
+0:23.98,
+		1:23.87,
+		…,
+		59:21.98
+}
+Además sabemos que las operaciones de modificación son más eficientes que las de inserción, puesto que si un campo ya existía en disco, solo hay que cambiar su valor, no es necesario relocalizar el documento si este es muy grande.
+
+Si quisiéramos guardar toda una hora de datos, podríamos pensar en algo así:
+
+
+{
+	timestamp:ISODate("2016-10-10T23:06:38.000Z"),
+	Valores:{
+0:23.98,
+		1:23.87,
+		…,
+		3598:22.14,
+		3599:21.98
+}
+Sin embargo, podríamos hacerlo de manera más eficiente aún:
+
+
+{
+	timestamp:ISODate("2016-10-10T23:06:38.000Z"),
+	Valores:{
+0:{0:23.98,1:23.87,...,58:23.84,59:23.81},
+		1:{0:23.74,1:23.71,...,58:23.62,59:23.49},
+		…
+		59:{0:23.24,1:23.20,...,58:23.06,59:23.00},
+}
+https://www.mongodb.com/blog/post/ schema-design-for-time-series-data-in-mongodb
+
+Two phase commit
+Las operaciones en mongodb son atómicas a nivel de documento, perdemos la ventaja de las operaciones de las base de datos SQL, por eso vamos a ver un ejemplo de cómo realizar transacciones en mongoDB.
+
+Supongamos que queremos realizar un transferencia de dinero entre dos cuentas A y B y asegurarnos de que la operación se ha realizado de manera correcta.
+
+Deberemos crear dos colecciones, una con información de las cuentas y otra con información acerca de las transacciones, los pasos a realizar son:
+
+Insertar un nuevo documento con la transacción de la cuenta A a la B que incluya el estado “inicial”, la hora de la inserción y la cantidad de la transferencia.
+
+Modificamos el estado de la transacción a pendiente y actualizamos la hora de la última modificación.
+
+Modificamos la cuenta A con -cantidad y una transacción pendiente en el array de transacciones pendientes
+
+Modificamos la cuenta B con +cantidad y una transacción pendiente en el array de transacciones pendientes
+
+Modificamos la transacción a estado aplicada así como la hora de última actualización
+
+Eliminamos de ambas cuentas la transacción pendiente del array de transacciones pendientes
+
+Modificamos la transacción a un estado finalizada
+
+> use twoPhaseCommits
+switched to db thoPhaseCommits
+> db.cuentas.insert({_id:"A", balance:600, transaccionesPendientes:[]})
+WriteResult({ "nInserted" : 1 })
+> db.cuentas.insert({_id:"B", balance:900, transaccionesPendientes:[]})
+WriteResult({ "nInserted" : 1 })
+> db.transacciones.insert({_id:1, fuente:"A", destino:"B", cantidad:100, estado:"inicial", ultimaModificacion: new Date()})
+WriteResult({ "nInserted" : 1 })
+> var t = db.transacciones.find({estado:"inicial"})
+> t
+{ "_id" : 1, "fuente" : "A", "destino" : "B", "cantidad" : 100, "estado" : "inicial", "ultimaModificacion" : ISODate("2017-02-13T21:46:14.341Z") }
+
+> db.transacciones.update({_id:1, estado:"inicial"},{$set:{estado:"pendiente"},$currentDate:{ultimaModificacion:true}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> var t = db.transacciones.find({estado:"pendiente"})
+> t
+{ "_id" : 1, "fuente" : "A", "destino" : "B", "cantidad" : 100, "estado" : "pendiente", "ultimaModificacion" : ISODate("2017-02-13T21:48:35.153Z") }
+> db.cuentas.update({_id:"A", transaccionesPendientes:{$ne:1}},{$inc:{balance:-100},$push:{transaccionesPendientes:1}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.cuentas.update({_id:"B", transaccionesPendientes:{$ne:1}},{$inc:{balance:100},$push:{transaccionesPendientes:1}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.transacciones.update({_id:1, estado:"pendiente"},{$set:{estado:"hecha"},$currentDate:{ultimaModificacion:true}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.cuentas.update({_id:"A", transaccionesPendientes:1},{$pull:{transaccionesPendientes:1}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.cuentas.update({_id:"B", transaccionesPendientes:1},{$pull:{transaccionesPendientes:1}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.transacciones.update({_id:1, estado:"hecha"},{$set:{estado:"finalizada"},$currentDate:{ultimaModificacion:true}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.cuentas.find()
+{ "_id" : "A", "balance" : 500, "transaccionesPendientes" : [ ] }
+{ "_id" : "B", "balance" : 1000, "transaccionesPendientes" : [ ] }
+> db.transacciones.find()
+{ "_id" : 1, "fuente" : "A", "destino" : "B", "cantidad" : 100, "estado" : "finalizada", "ultimaModificacion" : ISODate("2017-02-13T21:53:09.805Z") }
+> 
+https://docs.mongodb.com/manual/tutorial/perform-two-phase-commits/
+
+##Indices
+
+Para entender los índices vamos a practicar sobre una base de datos ya creada con numerosas entradas. Para ello nos clonamos el repositorio mongoDB_seeder de mi github (https://github.com/pabSec/mongoDB_seeder) en un contenedor o máquina con node.js (docker run -ti -d node:latest). Este paso podemos saltarlo y simplemente restaurar la base de datos log completa que se encuentra en el mismo repositorio (mongorestore).
+
+Instalamos los paquetes mongoose y faker para que el script log.js se ejecute correctamente (npm install faker y npm install mongoose).
+
+> db.logs.count()
+40000
+Tenemos un total de 40000 documentos con datos relativos a un log de un servidor de este estilo:
+> db.logs.findOne()
+{
+	"_id" : ObjectId("58a358ab700eee0079c8e543"),
+	"host" : "2.20.64.134",
+	"user" : "Sandra_Glover",
+	"time" : ISODate("2017-02-14T19:21:15.207Z"),
+	"path" : "https://www.forocoches.com",
+	"request" : "POST",
+	"status" : "404",
+	"response_size" : 9677,
+	"user_agent" : "IE",
+	"__v" : 0
+}
+Vamos a comprobar en primer lugar cuanto tarda en ejecutar varios tipos de búsqueda para hacernos a la idea del rendimiento de mongoDB con y sin índices definidos:
+
+> db.logs.find({path:"https://www.forocoches.com"}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "log.logs",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"path" : {
+				"$eq" : "https://www.forocoches.com"
+			}
+		},
+		"winningPlan" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"path" : {
+					"$eq" : "https://www.forocoches.com"
+				}
+			},
+			"direction" : "forward"
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 5655,
+		"executionTimeMillis" : 42,
+		"totalKeysExamined" : 0,
+		"totalDocsExamined" : 40000,
+		"executionStages" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"path" : {
+					"$eq" : "https://www.forocoches.com"
+				}
+			},
+			"nReturned" : 5655,
+			"executionTimeMillisEstimate" : 50,
+			"works" : 40002,
+			"advanced" : 5655,
+			"needTime" : 34346,
+			"needYield" : 0,
+			"saveState" : 312,
+			"restoreState" : 312,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"direction" : "forward",
+			"docsExamined" : 40000
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+> db.logs.find({user:"Sandra_Glover"}).hint({"$natural":1}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "log.logs",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"user" : {
+				"$eq" : "Sandra_Glover"
+			}
+		},
+		"winningPlan" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"user" : {
+					"$eq" : "Sandra_Glover"
+				}
+			},
+			"direction" : "forward"
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 337,
+		"executionTimeMillis" : 16,
+		"totalKeysExamined" : 0,
+		"totalDocsExamined" : 40000,
+		"executionStages" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"user" : {
+					"$eq" : "Sandra_Glover"
+				}
+			},
+			"nReturned" : 337,
+			"executionTimeMillisEstimate" : 10,
+			"works" : 40002,
+			"advanced" : 337,
+			"needTime" : 39664,
+			"needYield" : 0,
+			"saveState" : 312,
+			"restoreState" : 312,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"direction" : "forward",
+			"docsExamined" : 40000
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+Y a continuación jugaremos con los índices para comprobar su correcto funcionamiento. Supongamos que queremos realizar una aplicación cuyo panel de control nos permita visualizar los datos para cada path así como los datos de navegación para cada usuario.
+
+La lógica nos dice que deberíamos probar con índices simples para cada uno de esos campos así como un índice compuesto para cada uno. A continuación probaremos con esas combinaciones y comprobaremos cuál resulta más eficiente.
+
+
+> db.logs.createIndex({user:1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 1,
+	"numIndexesAfter" : 2,
+	"ok" : 1
+}
+> db.logs.createIndex({path:1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 2,
+	"numIndexesAfter" : 3,
+	"ok" : 1
+}
+> db.logs.createIndex({user:1,path:1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 3,
+	"numIndexesAfter" : 4,
+	"ok" : 1
+}
+> db.logs.createIndex({path:1,user:1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 4,
+	"numIndexesAfter" : 5,
+	"ok" : 1
+}
+Y vamos a realizar las queries anteriores para ver qué índices utiliza mongo a la hora de buscar por defecto.
+
+> db.logs.find({user:"Sandra_Glover"}).hint({user:1}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "log.logs",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"user" : {
+				"$eq" : "Sandra_Glover"
+			}
+		},
+		"winningPlan" : {
+			"stage" : "FETCH",
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"user" : 1
+				},
+				"indexName" : "user_1",
+				"isMultiKey" : false,
+				"multiKeyPaths" : {
+					"user" : [ ]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"user" : [
+						"[\"Sandra_Glover\", \"Sandra_Glover\"]"
+					]
+				}
+			}
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 337,
+		"executionTimeMillis" : 0,
+		"totalKeysExamined" : 337,
+		"totalDocsExamined" : 337,
+		"executionStages" : {
+			"stage" : "FETCH",
+			"nReturned" : 337,
+			"executionTimeMillisEstimate" : 0,
+			"works" : 338,
+			"advanced" : 337,
+			"needTime" : 0,
+			"needYield" : 0,
+			"saveState" : 2,
+			"restoreState" : 2,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"docsExamined" : 337,
+			"alreadyHasObj" : 0,
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"nReturned" : 337,
+				"executionTimeMillisEstimate" : 0,
+				"works" : 338,
+				"advanced" : 337,
+				"needTime" : 0,
+				"needYield" : 0,
+				"saveState" : 2,
+				"restoreState" : 2,
+				"isEOF" : 1,
+				"invalidates" : 0,
+				"keyPattern" : {
+					"user" : 1
+				},
+				"indexName" : "user_1",
+				"isMultiKey" : false,
+				"multiKeyPaths" : {
+					"user" : [ ]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"user" : [
+						"[\"Sandra_Glover\", \"Sandra_Glover\"]"
+					]
+				},
+				"keysExamined" : 337,
+				"seeks" : 1,
+				"dupsTested" : 0,
+				"dupsDropped" : 0,
+				"seenInvalidated" : 0
+			}
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+Para una base de datos de 40000 documentos, definiendo un índice simple, reducimos la operación de 16 milisegundos a 0. Del mismo modo, para el path “http://www.forocoches.com” reducimos la query de 42 milisegundos a 6:
+
+> db.logs.find({path:"https://www.forocoches.com"}).hint({path:1}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "log.logs",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"path" : {
+				"$eq" : "https://www.forocoches.com"
+			}
+		},
+		"winningPlan" : {
+			"stage" : "FETCH",
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"path" : 1
+				},
+				"indexName" : "path_1",
+				"isMultiKey" : false,
+				"multiKeyPaths" : {
+					"path" : [ ]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"path" : [
+						"[\"https://www.forocoches.com\", \"https://www.forocoches.com\"]"
+					]
+				}
+			}
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 5655,
+		"executionTimeMillis" : 6,
+		"totalKeysExamined" : 5655,
+		"totalDocsExamined" : 5655,
+		"executionStages" : {
+			"stage" : "FETCH",
+			"nReturned" : 5655,
+			"executionTimeMillisEstimate" : 10,
+			"works" : 5656,
+			"advanced" : 5655,
+			"needTime" : 0,
+			"needYield" : 0,
+			"saveState" : 44,
+			"restoreState" : 44,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"docsExamined" : 5655,
+			"alreadyHasObj" : 0,
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"nReturned" : 5655,
+				"executionTimeMillisEstimate" : 10,
+				"works" : 5656,
+				"advanced" : 5655,
+				"needTime" : 0,
+				"needYield" : 0,
+				"saveState" : 44,
+				"restoreState" : 44,
+				"isEOF" : 1,
+				"invalidates" : 0,
+				"keyPattern" : {
+					"path" : 1
+				},
+				"indexName" : "path_1",
+				"isMultiKey" : false,
+				"multiKeyPaths" : {
+					"path" : [ ]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"path" : [
+						"[\"https://www.forocoches.com\", \"https://www.forocoches.com\"]"
+					]
+				},
+				"keysExamined" : 5655,
+				"seeks" : 1,
+				"dupsTested" : 0,
+				"dupsDropped" : 0,
+				"seenInvalidated" : 0
+			}
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+
+Del mismo modo que hicimos con los índices simples, restauramos la base de datos inventory para practicar con ella el tema de los índices compuestos (https://github.com/pabSec/mongoDB_seeder/tree/master/inventory).
+
+Para practicar algunas queries complejas buscaremos elementos cuyo stockage sea menor a 2 y proyectaremos la información relevante de los mismos:
+
+
+> db.inventories.find({"stock.cantidad":{$lt:2}},{_id:0,item:1,stock:{$elemMatch:{cantidad:{$lt:2}}}})
+{ "item" : "Incredible Fresh Chips", "stock" : [ { "cantidad" : 1, "color" : "Rosa", "size" : "xl" } ] }
+{ "item" : "Rustic Concrete Bacon", "stock" : [ { "cantidad" : 1, "color" : "Azul", "size" : "xl" } ] }
+{ "item" : "Tasty Rubber Gloves", "stock" : [ { "cantidad" : 1, "color" : "Negro", "size" : "m" } ] }
+{ "item" : "Licensed Granite Cheese", "stock" : [ { "cantidad" : 1, "color" : "Blanco", "size" : "xl" } ] }
+{ "item" : "Rustic Frozen Cheese", "stock" : [ { "cantidad" : 1, "color" : "Azul", "size" : "xl" } ] }
+…
+A continuación haremos una búsqueda para aquellos elementos de color rosa ($elemMatch) de los que resten menos de 2 unidades en stock y comprobaremos la eficiencia de la query:
+
+
+> db.inventories.find({stock:{$elemMatch:{"cantidad":{$lt:2},"color":"Rosa"}}})
+{ "_id" : ObjectId("58a366bd0831f80104df5abe"), "item" : "Incredible Fresh Chips", "stock" : [ { "cantidad" : 1, "color" : "Rosa", "size" : "xl" }, { "cantidad" : 22, "color" : "Morado", "size" : "l" }, { "cantidad" : 30, "color" : "Amarillo", "size" : "xl" }, { "cantidad" : 29, "color" : "Blanco", "size" : "m" }, { "cantidad" : 22, "color" : "Azul", "size" : "l" } ], "__v" : 0 }
+{ "_id" : ObjectId("58a366bd0831f80104df5b3d"), "item" : "Fantastic Metal Shirt", "stock" : [ { "cantidad" : 66, "color" : "Morado", "size" : "m" }, { "cantidad" : 1, "color" : "Rosa", "size" : "l" }, { "cantidad" : 72, "color" : "Verde", "size" : "m" }, { "cantidad" : 76, "color" : "Morado", "size" : "m" }, { "cantidad" : 10, "color" : "Rojo", "size" : "l" }, { "cantidad" : 53, "color" : "Blanco", "size" : "s" } ], "__v" : 0 }
+…
+La query tienen una duración de 63 milisegundos:
+
+
+> db.inventories.find({stock:{$elemMatch:{"cantidad":{$lt:2},"color":"Rosa"}}}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "inventory.inventories",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"stock" : {
+				"$elemMatch" : {
+					"$and" : [
+						{
+							"color" : {
+								"$eq" : "Rosa"
+							}
+						},
+						{
+							"cantidad" : {
+								"$lt" : 2
+							}
+						}
+					]
+				}
+			}
+		},
+		"winningPlan" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"stock" : {
+					"$elemMatch" : {
+						"$and" : [
+							{
+								"color" : {
+									"$eq" : "Rosa"
+								}
+							},
+							{
+								"cantidad" : {
+									"$lt" : 2
+								}
+							}
+						]
+					}
+				}
+			},
+			"direction" : "forward"
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 145,
+		"executionTimeMillis" : 63,
+		"totalKeysExamined" : 0,
+		"totalDocsExamined" : 32000,
+		"executionStages" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"stock" : {
+					"$elemMatch" : {
+						"$and" : [
+							{
+								"color" : {
+									"$eq" : "Rosa"
+								}
+							},
+							{
+								"cantidad" : {
+									"$lt" : 2
+								}
+							}
+						]
+					}
+				}
+			},
+			"nReturned" : 145,
+			"executionTimeMillisEstimate" : 51,
+			"works" : 32002,
+			"advanced" : 145,
+			"needTime" : 31856,
+			"needYield" : 0,
+			"saveState" : 250,
+			"restoreState" : 250,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"direction" : "forward",
+			"docsExamined" : 32000
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+Vamos a definir un índice compuesto para intentar optimizar la query y hacer nuestra aplicación de detección de stocks bajos más eficiente:
+
+> db.inventories.createIndex({"stock.cantidad":1,"stock.color":1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 1,
+	"numIndexesAfter" : 2,
+	"ok" : 1
+}
+> db.inventories.find({stock:{$elemMatch:{"cantidad":{$lt:2},"color":"Rosa"}}}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "inventory.inventories",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"stock" : {
+				"$elemMatch" : {
+					"$and" : [
+						{
+							"color" : {
+								"$eq" : "Rosa"
+							}
+						},
+						{
+							"cantidad" : {
+								"$lt" : 2
+							}
+						}
+					]
+				}
+			}
+		},
+		"winningPlan" : {
+			"stage" : "FETCH",
+			"filter" : {
+				"stock" : {
+					"$elemMatch" : {
+						"$and" : [
+							{
+								"cantidad" : {
+									"$lt" : 2
+								}
+							},
+							{
+								"color" : {
+									"$eq" : "Rosa"
+								}
+							}
+						]
+					}
+				}
+			},
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"stock.cantidad" : 1,
+					"stock.color" : 1
+				},
+				"indexName" : "stock.cantidad_1_stock.color_1",
+				"isMultiKey" : true,
+				"multiKeyPaths" : {
+					"stock.cantidad" : [
+						"stock"
+					],
+					"stock.color" : [
+						"stock"
+					]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"stock.cantidad" : [
+						"[-inf.0, 2.0)"
+					],
+					"stock.color" : [
+						"[\"Rosa\", \"Rosa\"]"
+					]
+				}
+			}
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 145,
+		"executionTimeMillis" : 1,
+		"totalKeysExamined" : 148,
+		"totalDocsExamined" : 145,
+		"executionStages" : {
+			"stage" : "FETCH",
+			"filter" : {
+				"stock" : {
+					"$elemMatch" : {
+						"$and" : [
+							{
+								"cantidad" : {
+									"$lt" : 2
+								}
+							},
+							{
+								"color" : {
+									"$eq" : "Rosa"
+								}
+							}
+						]
+					}
+				}
+			},
+			"nReturned" : 145,
+			"executionTimeMillisEstimate" : 10,
+			"works" : 148,
+			"advanced" : 145,
+			"needTime" : 2,
+			"needYield" : 0,
+			"saveState" : 1,
+			"restoreState" : 1,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"docsExamined" : 145,
+			"alreadyHasObj" : 0,
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"nReturned" : 145,
+				"executionTimeMillisEstimate" : 0,
+				"works" : 148,
+				"advanced" : 145,
+				"needTime" : 2,
+				"needYield" : 0,
+				"saveState" : 1,
+				"restoreState" : 1,
+				"isEOF" : 1,
+				"invalidates" : 0,
+				"keyPattern" : {
+					"stock.cantidad" : 1,
+					"stock.color" : 1
+				},
+				"indexName" : "stock.cantidad_1_stock.color_1",
+				"isMultiKey" : true,
+				"multiKeyPaths" : {
+					"stock.cantidad" : [
+						"stock"
+					],
+					"stock.color" : [
+						"stock"
+					]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"stock.cantidad" : [
+						"[-inf.0, 2.0)"
+					],
+					"stock.color" : [
+						"[\"Rosa\", \"Rosa\"]"
+					]
+				},
+				"keysExamined" : 148,
+				"seeks" : 3,
+				"dupsTested" : 145,
+				"dupsDropped" : 0,
+				"seenInvalidated" : 0
+			}
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+> db.inventories.createIndex({"stock.color":1,"stock.cantidad":1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 2,
+	"numIndexesAfter" : 3,
+	"ok" : 1
+}
+> db.inventories.find({stock:{$elemMatch:{"cantidad":{$lt:2},"color":"Rosa"}}}).hint({"stock.color":1,"stock.cantidad":1}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "inventory.inventories",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"stock" : {
+				"$elemMatch" : {
+					"$and" : [
+						{
+							"color" : {
+								"$eq" : "Rosa"
+							}
+						},
+						{
+							"cantidad" : {
+								"$lt" : 2
+							}
+						}
+					]
+				}
+			}
+		},
+		"winningPlan" : {
+			"stage" : "FETCH",
+			"filter" : {
+				"stock" : {
+					"$elemMatch" : {
+						"$and" : [
+							{
+								"color" : {
+									"$eq" : "Rosa"
+								}
+							},
+							{
+								"cantidad" : {
+									"$lt" : 2
+								}
+							}
+						]
+					}
+				}
+			},
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"stock.color" : 1,
+					"stock.cantidad" : 1
+				},
+				"indexName" : "stock.color_1_stock.cantidad_1",
+				"isMultiKey" : true,
+				"multiKeyPaths" : {
+					"stock.color" : [
+						"stock"
+					],
+					"stock.cantidad" : [
+						"stock"
+					]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"stock.color" : [
+						"[\"Rosa\", \"Rosa\"]"
+					],
+					"stock.cantidad" : [
+						"[-inf.0, 2.0)"
+					]
+				}
+			}
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 145,
+		"executionTimeMillis" : 1,
+		"totalKeysExamined" : 145,
+		"totalDocsExamined" : 145,
+		"executionStages" : {
+			"stage" : "FETCH",
+			"filter" : {
+				"stock" : {
+					"$elemMatch" : {
+						"$and" : [
+							{
+								"color" : {
+									"$eq" : "Rosa"
+								}
+							},
+							{
+								"cantidad" : {
+									"$lt" : 2
+								}
+							}
+						]
+					}
+				}
+			},
+			"nReturned" : 145,
+			"executionTimeMillisEstimate" : 0,
+			"works" : 146,
+			"advanced" : 145,
+			"needTime" : 0,
+			"needYield" : 0,
+			"saveState" : 1,
+			"restoreState" : 1,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"docsExamined" : 145,
+			"alreadyHasObj" : 0,
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"nReturned" : 145,
+				"executionTimeMillisEstimate" : 0,
+				"works" : 146,
+				"advanced" : 145,
+				"needTime" : 0,
+				"needYield" : 0,
+				"saveState" : 1,
+				"restoreState" : 1,
+				"isEOF" : 1,
+				"invalidates" : 0,
+				"keyPattern" : {
+					"stock.color" : 1,
+					"stock.cantidad" : 1
+				},
+				"indexName" : "stock.color_1_stock.cantidad_1",
+				"isMultiKey" : true,
+				"multiKeyPaths" : {
+					"stock.color" : [
+						"stock"
+					],
+					"stock.cantidad" : [
+						"stock"
+					]
+				},
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 2,
+				"direction" : "forward",
+				"indexBounds" : {
+					"stock.color" : [
+						"[\"Rosa\", \"Rosa\"]"
+					],
+					"stock.cantidad" : [
+						"[-inf.0, 2.0)"
+					]
+				},
+				"keysExamined" : 145,
+				"seeks" : 1,
+				"dupsTested" : 145,
+				"dupsDropped" : 0,
+				"seenInvalidated" : 0
+			}
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+Si comprobamos los resultados para ambas combinaciones de índices compuestos, comprobamos que ambos reducen igual las queries pero que en el último caso se examinan menos keys y por tanto es más eficiente.
+
+Indices Multillave
+
+En este ejemplo realizaremos exactamente las mismas pruebas que hemos realizado con los índices compuestos pero lo haremos aplicando un índice multillave al campo stock. Podréis comprobar como no son tan eficientes para nuestras búsquedas como lo fueron los compuestos, aunque siempre debe probarse.
+
+db.inventories.createIndex({"stock":1})
+ db.inventories.find({stock:{$elemMatch:{"cantidad":{$lt:2},"color":"Rosa"}}}).hint({"stock.color":1,"stock.cantidad":1}).hint({“stock”:1}).explain("executionStats")
+
+Indices de texto
+
+Del mismo modo que en los ejemplos anteriores, restauramos la BBDD commerceMulti para realizar los ejemplos con índices de texto. A modo de ejemplo de búsquedas complejas y para verificar el buen funcionamiento de los índices, vamos a realizar una búsqueda de zapatos hechos de madera o hierro que sean “Awesome” (increíbles) o “Handcrafted” (artesanos):
+
+
+> db.commerces.find({item:{$regex:/Shoes/} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).explain("executionStats")
+{
+	"queryPlanner" : {
+		"plannerVersion" : 1,
+		"namespace" : "commerceMulti.commerces",
+		"indexFilterSet" : false,
+		"parsedQuery" : {
+			"$and" : [
+				{
+					"$or" : [
+						{
+							"mat" : {
+								"$eq" : "Wooden"
+							}
+						},
+						{
+							"mat" : {
+								"$eq" : "Steel"
+							}
+						}
+					]
+				},
+				{
+					"item" : {
+						"$regex" : "Shoes"
+					}
+				},
+				{
+					"cat" : {
+						"$in" : [
+							"Awesome",
+							"Handcrafted"
+						]
+					}
+				}
+			]
+		},
+		"winningPlan" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"$and" : [
+					{
+						"$or" : [
+							{
+								"mat" : {
+									"$eq" : "Wooden"
+								}
+							},
+							{
+								"mat" : {
+									"$eq" : "Steel"
+								}
+							}
+						]
+					},
+					{
+						"item" : {
+							"$regex" : "Shoes"
+						}
+					},
+					{
+						"cat" : {
+							"$in" : [
+								"Awesome",
+								"Handcrafted"
+							]
+						}
+					}
+				]
+			},
+			"direction" : "forward"
+		},
+		"rejectedPlans" : [ ]
+	},
+	"executionStats" : {
+		"executionSuccess" : true,
+		"nReturned" : 32,
+		"executionTimeMillis" : 28,
+		"totalKeysExamined" : 0,
+		"totalDocsExamined" : 12000,
+		"executionStages" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"$and" : [
+					{
+						"$or" : [
+							{
+								"mat" : {
+									"$eq" : "Wooden"
+								}
+							},
+							{
+								"mat" : {
+									"$eq" : "Steel"
+								}
+							}
+						]
+					},
+					{
+						"item" : {
+							"$regex" : "Shoes"
+						}
+					},
+					{
+						"cat" : {
+							"$in" : [
+								"Awesome",
+								"Handcrafted"
+							]
+						}
+					}
+				]
+			},
+			"nReturned" : 32,
+			"executionTimeMillisEstimate" : 30,
+			"works" : 12002,
+			"advanced" : 32,
+			"needTime" : 11969,
+			"needYield" : 0,
+			"saveState" : 93,
+			"restoreState" : 93,
+			"isEOF" : 1,
+			"invalidates" : 0,
+			"direction" : "forward",
+			"docsExamined" : 12000
+		}
+	},
+	"serverInfo" : {
+		"host" : "7ea9850856d3",
+		"port" : 27017,
+		"version" : "3.4.2",
+		"gitVersion" : "3f76e40c105fc223b3e5aac3e20dcd026b83b38b"
+	},
+	"ok" : 1
+}
+
+La búsqueda devuelve 32 resultados y se toma en total 28 milisegundos para ser ejecutada en su totalidad. De cara a mejorar la eficiencia para este ejemplo, vamos a realizar una serie de comprobaciones que determinen el correcto funcionamiento de los índices de texto:
+
+Creamos un índice simple en item y realizamos la query con explain.
+ db.commerces.createIndex({item:1})
+Hacemos la misma query buscando para resultados exactos con explain (observar que sigue examinando los 12000 documentos, esto es por la expresión regular).
+db.commerces.find({item:{$regex:/ /},$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).explain("executionStats")
+Definimos item como un índice de texto.
+ db.commerces.createIndex({item:"text"}
+Realizamos de nuevo la búsqueda usando el comando $text y explain (observar cómo decrece el tiempo de ejecución y sobre todo el número de documentos examinados).
+db.commerces.find({$text:{$search:"Shoes"} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).explain("executionStats")
+Definimos índices de texto en item y cat y un índice simple en mat (ya que serán valores discretos y podremos hacer que la búsqueda siempre sea exacta)
+ db.commerces.getIndexes()
+> db.commerces.dropIndex("item_text")
+> db.commerces.dropIndex("item_1")
+> db.commerces.ensureIndex({item:"text",cat:"text",mat:1})
+Ver con getIndexes() las propiedades de los índices definidos
+ db.commerces.getIndexes()
+Buscamos en commerce por resultados que tengan la palabra X en item pero no la palabra Y
+ db.commerces.find({$text:{$search:"Shoes"},$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).count()
+
+> db.commerces.find({$text:{$search:"Shoes -Wooden"},$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).count()
+Buscamos por varias palabras
+> db.commerces.find({$text:{$search:"Shoes Wooden"} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).count()
+Buscamos con caseSensitive
+> db.commerces.find({$text:{$search:"shoes wooden",$caseSensitive:true} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).count()
+
+> db.commerces.find({$text:{$search:"shoes wooden",$caseSensitive:false} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).count()
+Buscamos por puntuación del resultado (no habiendo definido previamente los pesos)
+> db.commerces.find({$text:{$search:"shoes wooden",$caseSensitive:false} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}},{item:1,_id:0,score: {$meta: "textScore"}}).sort({score:{$meta:"textScore"}}).pretty()
+Buscamos por frase completa
+db.commerces.find({$text:{$search:"\"Wooden Shoes\""} ,$or:[{mat:"Wooden"},{mat:"Steel"}],cat:{$in:["Awesome","Handcrafted"]}}).count()
+Cambiamos el peso de las puntuaciones para hacer búsquedas y puntuaciones mejores
+> db.commerces.dropIndex("item_text_cat_text_mat_1")
+> db.commerces.createIndex({item:"text",cat:"text",mat:1},{weights: {item:10,cat:5}})
+Repetimos búsqueda de puntuaciones
+>db.commerces.find({$text:{$search:"shoes wooden Awesome Handcrafted",$caseSensitive:false} ,$or:[{mat:"Wooden"},{mat:"Steel"}]},{item:1,_id:0,score: {$meta: "textScore"}}).sort({score:{$meta:"textScore"}}).pretty()
+Después de realizar todos los ejercicios, es obvio que 
+
+emplear índices de texto supone un salto de eficiencia en cuanto a rendimiento de la BBDD cuando manejemos colecciones con mucho contenido de este tipo de datos. Además es vital realizar la búsquedas empleando el comando $text.
+
+Para una query así:
+
+ { quantity: { $gte: 100, $lte: 300 }, type: "food" }
+Si probamos creando índices compuestos {type:1, quantity:1} y {quantity:1,type:1} comprobamos con “executionStats” que el primero de ellos es más eficiente porque solo analiza 2 index keys y devuelve 2 documentos, mientras que el otro para devolver los mismos dos documentos analiza 5 index keys.
